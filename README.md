@@ -73,3 +73,101 @@ The clients overlap in their requirements. For instance, both need access to
 authentication credentials. The Docker Registry clients needs those to list
 repositories from certain namespaces. The Runtime Client need those to pull
 images from these very namespaces.
+
+## Installation (October 2018)
+
+The following sections describes how to set up all necessary components to run the Personal Health Train Infrastructure.
+These installation steps have been performed and tested on a fresh Ubuntu 18.04.
+Obviously, the stations and the registry are able to run on different systems.
+
+### The registry / Portus
+
+This [git repository](https://github.com/PersonalHealthTrain/Portus) contains the source code of the Portus-Project, adapted to the
+needs of the Personal Health Train Registry.
+
+#### Prerequisites
+
+- Install Docker Community Edition (CE): <https://docs.docker.com/install/linux/docker-ce/ubuntu/>
+- Install Docker Compose to launch multiple containers at once: <https://docs.docker.com/compose/install/>
+
+#### Setup
+
+```shell
+git clone https://github.com/PersonalHealthTrain/Portus
+cd Portus
+git checkout feature/station_support
+nano .env # Edit MACHINE_FQDN to match your IP
+sudo docker-compose up # Takes a while to pull/build all containers & launch
+```
+
+- You can now access the Portus-Webinterface under <yourMachineIp:3000>, where you'll be prompted to generate an admin account.
+- Afterwards, the interface asks for the location of the registry. The docker registry is a separate container and 
+  has been launched via the `docker-compose` statement and therefore runs on the same host.
+  - *Name*: DefaultRegistry
+  - *Hostname*: <yourMachineIp:5000>
+  - The *Create*-Button will become active after the connection check in the background was successful. Click it
+- In the menu bar on the left, you should see an entry *Stations*. If not, you have launched the wrong branch of Portus, make sure  
+  you checked out the correct branch
+  checked out the correct branch
+- Under the menu *Users* create a user for each station
+  - **TODO** what's with the bot feature? Should/Could a station user be a bot?
+  - **TODO** Ask Lukas whether this is necessary checked out the correct branch
+- Under *Teams* create a team for the stations
+  - **TODO** Is this necessary? A namespace just asks for a team, therefore I'm assuming it is
+  - Select the newly created team by clicking on the name
+  - Under *Members* add the station users to the team as *Contributor*s
+- In the menu on the left navigate to *Namespaces* and create a namespace for the trains (e.g. *trains*). Provide the team you created
+  a couple steps above as *owner*
+
+- **TODO**
+  - Create user for each station?
+  - when do the stations show up in the user interface?
+  - How do I upload a train?
+
+### The station
+
+This [git repository](https://github.com/PersonalHealthTrain/station) contains the source code for a simple Station, a docker client
+configured to check the registry for new Trains/Docker Images, pulling & executing them.
+
+#### Using the binary
+
+- **TODO** Lukas mentionend it's possible to configure the station via environment params. Check source code to see how
+- Describe use of binary
+
+#### Prerequisites
+
+- A Java Development Environment (See [documentation](https://github.com/PersonalHealthTrain/station#prerequisites))
+
+  ``` shell
+  sudo apt install openjdk-8-jdk
+  ```
+
+- [Gradle](https://gradle.org/install/) (Tested with 4.9 & higher, doesn't work with version 3):
+
+  ```shell
+  wget https://services.gradle.org/distributions/gradle-4.10.2-bin.zip
+  sudo mkdir /opt/gradle
+  sudo unzip -d /opt/gradle/ gradle-4.10.2-bin.zip
+  export PATH=$PATH:/opt/gradle/gradle-4.10.2/bin # If necessary, additionally add to PATH permanently
+  gradle -v # Should print welcome message
+  rm gradle-4.10.2-bin.zip
+  ```
+
+  Note: `sudo apt install gradle` installs version 3, which isn't compatible
+
+- **TODO** Docker client / runtime?
+
+#### Configure & Build from source
+
+```shell
+git clone https://github.com/PersonalHealthTrain/station
+git checkout develop # Currently only the develop branch is building
+cd station
+nano src/main/resources/application.yml # Configure the station to your settings
+gradle assemble
+java -jar build/libs/station-0.0.2.jar # Actually run the station
+```
+
+### Train
+
+ **TODO** How to create a train and how to push it to the registry
