@@ -3,10 +3,12 @@
 This is the documentation of the Personal Health Train.
 
 ## Architecture diagram
+
 - [PHT.archimate](PHT.archimate) is the current view on the architecture, available online at [personalhealthtrain.github.io](https://personalhealthtrain.github.io/Documentation/).
 - [PHT-original.archimate](PHT-original.archimate) is the collection of original PHT architecture diagrams, as discussed during the technical meeting in Leiden in April 2018.
 
 ## Live view of the architecture
+
 The latest export of the architecture diagram is available at [personalhealthtrain.github.io](https://personalhealthtrain.github.io/Documentation/).
 
 ## General Information
@@ -24,14 +26,14 @@ The latest export of the architecture diagram is available at [personalhealthtra
 - [Use cases](https://github.com/PersonalHealthTrain/Documentation/wiki/Use-Cases)
     - A set of use cases highlighting key situations envisioned for the Personal Health Train
 
-
-
 ## Library
+
 This is an overview of the PHT library components that were developed for the JVM.
 This section describes all the repositories that are prefixed with `lib-`. as
 these comprise all the components of the library.
 
 ### Overview
+
 ![PHT Library](https://github.com/PersonalHealthTrain/Documentation/blob/master/figures/lib.png?raw=true "PHT Library")
 
 Each node in this image describes one Git repository.
@@ -110,19 +112,14 @@ sudo docker-compose up # Takes a while to pull/build all containers & launch
   you checked out the correct branch
   checked out the correct branch
 - Under the menu *Users* create a user for each station
-  - **TODO** what's with the bot feature? Should/Could a station user be a bot?
-  - **TODO** Ask Lukas whether this is necessary checked out the correct branch
+  - Leave the field *bot* unticked
+  - You can provide any email address, currently it isn't used anywhere
 - Under *Teams* create a team for the stations
-  - **TODO** Is this necessary? A namespace just asks for a team, therefore I'm assuming it is
   - Select the newly created team by clicking on the name
-  - Under *Members* add the station users to the team as *Contributor*s
+  - Under *Members* add the station users to the team as ~~*Contributor*s~~ *Owner* (Currently there's a bug in the registry, only allowing
+    owners to see all available repositories)
 - In the menu on the left navigate to *Namespaces* and create a namespace for the trains (e.g. *trains*). Provide the team you created
   a couple steps above as *owner*
-
-- **TODO**
-  - Create user for each station?
-  - when do the stations show up in the user interface?
-  - How do I upload a train?
 
 ### The station
 
@@ -131,8 +128,8 @@ configured to check the registry for new Trains/Docker Images, pulling & executi
 
 #### Using the binary
 
-- **TODO** Lukas mentionend it's possible to configure the station via environment params. Check source code to see how
-- Describe use of binary
+- **TODO** Test & Describe usage of environment parameters to overwrite *application.yml*
+- **TODO** Describe use of binary. For now use self-built version
 
 #### Prerequisites
 
@@ -155,18 +152,85 @@ configured to check the registry for new Trains/Docker Images, pulling & executi
 
   Note: `sudo apt install gradle` installs version 3, which isn't compatible
 
-- **TODO** Docker client / runtime?
+- Docker Community Edition (CE):
+  - Install Docker Community Edition (CE): <https://docs.docker.com/install/linux/docker-ce/ubuntu/>
+  - Allow connection to insecure registry
+    - Open / Create a Docker config with `sudo nano /etc/docker/daemon.json`
+    - Add / Paste the following contents
+      ```json
+      {
+        "insecure-registries" : [ "<YourPortusIP>:5000" ]
+      }
+      ```
+  - Drop need for root to execute docker commands
+    - Per default root rights are necessary to execute docker commands
+    - To allow the station to execute docker commands, the user needs to be added to the docker group
+    - `sudo usermod -AG docker <yourUserName>`
+    - Log out & in again to ensure you're added to the group
+  - Sanity check: Log in to Portus from the machine the station will be running on
+    - `docker login <YourPortusIP>:5000`
+    - Provide your station username & password you created during the setup of portus
+    - Login should succeed
 
 #### Configure & Build from source
 
-```shell
-git clone https://github.com/PersonalHealthTrain/station
-git checkout develop # Currently only the develop branch is building
-cd station
-nano src/main/resources/application.yml # Configure the station to your settings
-gradle assemble
-java -jar build/libs/station-0.0.2.jar # Actually run the station
-```
+- Check out the correct code version:
+    ```shell
+    git clone https://github.com/PersonalHealthTrain/station
+    cd station
+    git checkout develop # Check out the current version of the station
+    ```
+- Set up some dummy resources for the train & station to work with
+    ```shell
+    cd ~
+    git clone https://github.com/PersonalHealthTrain/file-download-iris.git
+    cd file-download-iris
+    docker-compose start # Launch a flask server in the background serving csv files
+    docker network ls # Look for the NETWORK ID of file-download-iris_iris0 & copy it
+    docker inspect <Network ID you just copied> # Copy the value of the field "Id"
+    nano ~/station/src/main/resources/application.yml # Replace the existing networkId with the long Id you just copied
+    # When done with all trains & the station, stop the server
+    docker-compose stop
+    ```
+- Configure the station
+    ```shell
+    cd ~/station
+    nano src/main/resources/application.yml # Configure the station to your settings
+    ```
+    Edit the *application.yml* to match your values:
+    ```json
+    server:
+      port: 9292
+
+    station:
+
+      name: station0 # Or some value not yet taken. Start with 0
+      id: 0         # Or some value not yet taken. Start with 0
+
+      resources:
+        PHT_RESOURCE_FHIR_DSTU3: http://142.93.105.33:8080/baseDstu3
+        PHT_FILE_DOWNLOAD_SERVICE: http://file_download_service_0:5000
+
+      docker:
+        networkId: fc430b950f34d5e2eef84b1c20a0f56878680857a32210bbbac28c7b04e4e4f4
+
+      registry:
+        uri: http://<YourPortusIP>:5000
+        namespace: <YourTrainNamespace>
+        username: <YourStationUserName>
+        password: <YourStationPassword>
+    ```
+
+- Run the station:
+    ```shell
+    cd ~/station
+    ./gradlew bootRun # See if the station starts without errors
+    ```
+
+  - Run without errors = Spring-Logo appears, some log messages roll through, the bottom line shows *80% EXECUTING*, no stack-traces 
+    appear
+  - If there were a train on the registry, tagged with `<number>-station.<yourStationId>`, it would pull, execute & push the train
+    - See the next section for how to create a train
 
 ### Train
 
