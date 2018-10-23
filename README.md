@@ -78,9 +78,9 @@ images from these very namespaces.
 
 ## Installation (October 2018)
 
-The following sections describes how to set up all necessary components to run the Personal Health Train Infrastructure.
+The following sections describe how to set up all necessary components to run the Personal Health Train Infrastructure.
 These installation steps have been performed and tested on a fresh Ubuntu 18.04.
-Obviously, the stations and the registry are able to run on different systems.
+Obviously, the stations and the registry are able to run on separate systems.
 
 ### The registry / Portus
 
@@ -102,18 +102,18 @@ nano .env # Edit MACHINE_FQDN to match your IP
 sudo docker-compose up # Takes a while to pull/build all containers & launch
 ```
 
-- You can now access the Portus-Webinterface under <yourMachineIp:3000>, where you'll be prompted to generate an admin account.
+- You can now access the Portus-Webinterface under <http://yourMachineIp:3000>, where you'll be prompted to generate an admin account.
 - Afterwards, the interface asks for the location of the registry. The docker registry is a separate container and 
   has been launched via the `docker-compose` statement and therefore runs on the same host.
   - *Name*: DefaultRegistry
   - *Hostname*: <yourMachineIp:5000>
   - The *Create*-Button will become active after the connection check in the background was successful. Click it
 - In the menu bar on the left, you should see an entry *Stations*. If not, you have launched the wrong branch of Portus, make sure  
-  you checked out the correct branch
-  checked out the correct branch
+  you checked out the correct branch (*feature/station_support*)
 - Under the menu *Users* create a user for each station
   - Leave the field *bot* unticked
   - You can provide any email address, currently it isn't used anywhere
+  - Ideally name the users `station0`, `station1` and so on
 - Under *Teams* create a team for the stations
   - Select the newly created team by clicking on the name
   - Under *Members* add the station users to the team as ~~*Contributor*s~~ *Owner* (Currently there's a bug in the registry, only allowing
